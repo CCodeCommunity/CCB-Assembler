@@ -264,7 +264,7 @@ namespace CCA {
 		std::vector<Token> tokens = lexer(readFile(fileName));
 
 		std::cout << "Generating " << outputName << "...\n";
-		
+
 		printTokens(tokens);
 
 		return;
