@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <chrono>
 
-// g++ main.cpp -o cca && ./cca test.cca
+// g++ main.cpp -o cca -std=c++11 && ./cca test.cca
 
 namespace CCA {
 	bool in_array(const std::string &value, const std::vector<std::string> &array)
@@ -33,6 +33,7 @@ namespace CCA {
 		int lineFound;
 		std::string valString;
 		int valNumeric;
+		int byteIndex;
 	};
 
 	struct Definition {
@@ -133,6 +134,7 @@ namespace CCA {
 		std::vector<Token> tokens;
 		int lineFound = 1;
 		bool error = false;
+		int byteIndex = 0;
 
 		for (unsigned int readingIndex = 0; readingIndex < code.size(); readingIndex++) {
 			char currentCharacter = code[readingIndex];
@@ -152,7 +154,8 @@ namespace CCA {
 					TokenType::MARKER,
 					lineFound,
 					value,
-					0
+					0,
+					byteIndex
 				});
 			}
 			
@@ -161,7 +164,8 @@ namespace CCA {
 					TokenType::DIVIDER,
 					lineFound,
 					",",
-					0
+					0,
+					byteIndex
 				});
 			}
 			
@@ -172,7 +176,8 @@ namespace CCA {
 					TokenType::IDENTIFIER,
 					lineFound,
 					value,
-					0
+					0,
+					byteIndex
 				});
 			}
 			
@@ -183,7 +188,8 @@ namespace CCA {
 					TokenType::NUMBER,
 					lineFound,
 					"",
-					value
+					value,
+					byteIndex
 				});
 			}
 			
@@ -195,7 +201,8 @@ namespace CCA {
 					TokenType::ADDRESS,
 					lineFound,
 					"",
-					value
+					value,
+					byteIndex
 				});
 			}
 			
@@ -207,7 +214,8 @@ namespace CCA {
 					TokenType::STRING,
 					lineFound,
 					value,
-					0
+					0,
+					byteIndex
 				});
 			}
 
@@ -342,6 +350,13 @@ namespace CCA {
 		}
 	}
 
+	void pushLabel(std::vector<unsigned char> &bytecode, const Token &t) {
+		for (int i = 0; i < 4; i++) {
+			unsigned char byte = (t.byteIndex >> (24 - 8 * i)) & 0xFF;
+			bytecode.push_back(byte);
+		}
+	}
+
 	void generateBytecode(std::vector<Definition> definitions, std::vector<Token> tokens, std::string fileName) {
 		std::vector<unsigned char> bytecode;
 
@@ -412,12 +427,24 @@ namespace CCA {
 					bytecode.push_back(0x08);
 					pushRegister(bytecode, tokens[i + 1]);
 					pushNumeric(bytecode, tokens[i + 3]);
+				} else if (tokens[i + 1].type == TokenType::ADDRESS && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
+					bytecode.push_back(0x09);
+					pushNumeric(bytecode, tokens[i + 1]);
+					pushRegister(bytecode, tokens[i + 3]);
+				} else if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
+					bytecode.push_back(0x0a);
+					pushRegister(bytecode, tokens[i + 1]);
+					pushRegister(bytecode, tokens[i + 3]);
+				} else if (tokens[i + 1].type == TokenType::ADDRESS && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::ADDRESS) {
+					bytecode.push_back(0x0b);
+					pushNumeric(bytecode, tokens[i + 1]);
+					pushNumeric(bytecode, tokens[i + 3]);
 				} else {
 					std::cout << "[ERROR] Unknown structure for 'mov' mnemonic on line " << opcode.lineFound
 						<< ".\nExpected one of the following: \n"
-						<< "  - mov <register>, <number>\n"//
-						<< "  - mov <address>, <number>\n"//
-						<< "  - mov <register>, <address>\n"//
+						<< "  - mov <register>, <number>\n"
+						<< "  - mov <address>, <number>\n"
+						<< "  - mov <register>, <address>\n"
 						<< "  - mov <address>, <register>\n"
 						<< "  - mov <register>, <register>\n"
 						<< "  - mov <address>, <address>\n"
@@ -427,6 +454,212 @@ namespace CCA {
 				}
 
 				i += 3;
+			} else if (opcode.valString == "add") {
+				if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
+					bytecode.push_back(0x10);
+					pushRegister(bytecode, tokens[i + 1]);
+					pushRegister(bytecode, tokens[i + 3]);
+					i += 3;
+				} else {
+					bytecode.push_back(0x11);
+				}
+			} else if (opcode.valString == "sub") {
+				if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
+					bytecode.push_back(0x12);
+					pushRegister(bytecode, tokens[i + 1]);
+					pushRegister(bytecode, tokens[i + 3]);
+					i += 3;
+				} else {
+					bytecode.push_back(0x13);
+				}
+			} else if (opcode.valString == "mul") {
+				if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
+					bytecode.push_back(0x14);
+					pushRegister(bytecode, tokens[i + 1]);
+					pushRegister(bytecode, tokens[i + 3]);
+					i += 3;
+				} else {
+					bytecode.push_back(0x15);
+				}
+			} else if (opcode.valString == "div") {
+				if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
+					bytecode.push_back(0x16);
+					pushRegister(bytecode, tokens[i + 1]);
+					pushRegister(bytecode, tokens[i + 3]);
+					i += 3;
+				} else {
+					bytecode.push_back(0x17);
+				}
+			} else if (opcode.valString == "not") {
+				if (tokens[i + 1].type == TokenType::REGISTER) {
+					bytecode.push_back(0x18);
+					pushRegister(bytecode, tokens[i + 1]);
+					i += 3;
+				} else {
+					bytecode.push_back(0x19);
+				}
+			} else if (opcode.valString == "and") {
+				if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
+					bytecode.push_back(0x1a);
+					pushRegister(bytecode, tokens[i + 1]);
+					pushRegister(bytecode, tokens[i + 3]);
+					i += 3;
+				} else {
+					bytecode.push_back(0x1b);
+				}
+			} else if (opcode.valString == "or") {
+				if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
+					bytecode.push_back(0x1c);
+					pushRegister(bytecode, tokens[i + 1]);
+					pushRegister(bytecode, tokens[i + 3]);
+					i += 3;
+				} else {
+					bytecode.push_back(0x1d);
+				}
+			} else if (opcode.valString == "xor") {
+				if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
+					bytecode.push_back(0x1e);
+					pushRegister(bytecode, tokens[i + 1]);
+					pushRegister(bytecode, tokens[i + 3]);
+					i += 3;
+				} else {
+					bytecode.push_back(0x1f);
+				}
+			} else if (opcode.valString == "jmp") {
+				if (tokens[i + 1].type == TokenType::NUMBER) {
+					bytecode.push_back(0x20);
+					pushNumeric(bytecode, tokens[i + 1]);
+					i += 1;
+				} else {
+					std::cout << "[ERROR] Unknown structure for 'jmp' mnemonic on line " << opcode.lineFound
+						<< ".\nExpected one of the following: \n"
+						<< "  - jmp <number>\n"
+						<< "\n";
+
+					error = true;
+				}
+			} else if (opcode.valString == "cmp") {
+				if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
+					bytecode.push_back(0x30);
+					pushRegister(bytecode, tokens[i + 1]);
+					pushRegister(bytecode, tokens[i + 3]);
+					i += 3;
+				} else if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::NUMBER) {
+					bytecode.push_back(0x31);
+					pushRegister(bytecode, tokens[i + 1]);
+					pushNumeric(bytecode, tokens[i + 3]);
+					i += 3;
+				} else if (tokens[i + 1].type == TokenType::NUMBER) {
+					bytecode.push_back(0x32);
+					pushNumeric(bytecode, tokens[i + 1]);
+					i += 1;
+				} else {
+					std::cout << "[ERROR] Unknown structure for 'cmp' mnemonic on line " << opcode.lineFound
+						<< ".\nExpected one of the following: \n"
+						<< "  - cmp <register>, <register>\n"
+						<< "  - cmp <register>, <number>\n"
+						<< "  - cmp <number>\n"
+						<< "\n";
+
+					error = true;
+				}
+			} else if (opcode.valString == "je") {
+				if (tokens[i + 1].type == TokenType::NUMBER) {
+					bytecode.push_back(0x33);
+					pushNumeric(bytecode, tokens[i + 1]);
+					i += 1;
+				} else {
+					std::cout << "[ERROR] Unknown structure for 'je' mnemonic on line " << opcode.lineFound
+						<< ".\nExpected one of the following: \n"
+						<< "  - je <number>\n"
+						<< "\n";
+
+					error = true;
+				}
+			} else if (opcode.valString == "jne") {
+				if (tokens[i + 1].type == TokenType::NUMBER) {
+					bytecode.push_back(0x34);
+					pushNumeric(bytecode, tokens[i + 1]);
+					i += 1;
+				} else {
+					std::cout << "[ERROR] Unknown structure for 'jne' mnemonic on line " << opcode.lineFound
+						<< ".\nExpected one of the following: \n"
+						<< "  - jne <number>\n"
+						<< "\n";
+
+					error = true;
+				}
+			} else if (opcode.valString == "jg") {
+				if (tokens[i + 1].type == TokenType::NUMBER) {
+					bytecode.push_back(0x35);
+					pushNumeric(bytecode, tokens[i + 1]);
+					i += 1;
+				} else {
+					std::cout << "[ERROR] Unknown structure for 'jg' mnemonic on line " << opcode.lineFound
+						<< ".\nExpected one of the following: \n"
+						<< "  - jg <number>\n"
+						<< "\n";
+
+					error = true;
+				}
+			} else if (opcode.valString == "js") {
+				if (tokens[i + 1].type == TokenType::NUMBER) {
+					bytecode.push_back(0x36);
+					pushNumeric(bytecode, tokens[i + 1]);
+					i += 1;
+				} else {
+					std::cout << "[ERROR] Unknown structure for 'js' mnemonic on line " << opcode.lineFound
+						<< ".\nExpected one of the following: \n"
+						<< "  - js <number>\n"
+						<< "\n";
+
+					error = true;
+				}
+			} else if (opcode.valString == "jo") {
+				if (tokens[i + 1].type == TokenType::NUMBER) {
+					bytecode.push_back(0x37);
+					pushNumeric(bytecode, tokens[i + 1]);
+					i += 1;
+				} else {
+					std::cout << "[ERROR] Unknown structure for 'jo' mnemonic on line " << opcode.lineFound
+						<< ".\nExpected one of the following: \n"
+						<< "  - jo <number>\n"
+						<< "\n";
+
+					error = true;
+				}
+			} else if (opcode.valString == "frs") {
+				bytecode.push_back(0x40);
+			} else if (opcode.valString == "inc") {
+				if (tokens[i + 1].type == TokenType::REGISTER) {
+					bytecode.push_back(0x50);
+					pushRegister(bytecode, tokens[i + 1]);
+					i += 1;
+				} else {
+					bytecode.push_back(0x52);
+				}
+			} else if (opcode.valString == "dec") {
+				if (tokens[i + 1].type == TokenType::REGISTER) {
+					bytecode.push_back(0x51);
+					pushRegister(bytecode, tokens[i + 1]);
+					i += 1;
+				} else {
+					bytecode.push_back(0x53);
+				}
+			} else if (opcode.valString == "call") {
+				if (tokens[i + 1].type == TokenType::NUMBER) {
+					bytecode.push_back(0x60);
+					i += 1;
+				} else {
+					std::cout << "[ERROR] Unknown structure for 'call' mnemonic on line " << opcode.lineFound
+						<< ".\nExpected one of the following: \n"
+						<< "  - call <number>\n"
+						<< "\n";
+
+					error = true;
+				}
+			} else if (opcode.valString == "ret") {
+				bytecode.push_back(0x61);
 			}
 		}
 
