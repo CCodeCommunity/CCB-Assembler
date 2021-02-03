@@ -1,3 +1,4 @@
+// stdlib headers
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
@@ -7,11 +8,15 @@
 #include <algorithm>
 #include <chrono>
 
+// other libraries
+#include "./lib/termcolor.hpp"
+#include "./lib/cxxopt.hpp"
+
+// how to compile:
 // g++ main.cpp -o cca -std=c++11 && ./cca test.cca
 
 namespace CCA {
-	bool in_array(const std::string &value, const std::vector<std::string> &array)
-	{
+	bool in_array(const std::string &value, const std::vector<std::string> &array) {
 		return std::find(array.begin(), array.end(), value) != array.end();
 	}
 
@@ -41,13 +46,18 @@ namespace CCA {
 		std::string value;
 		std::string name;
 	};
+
+	struct Marker {
+		std::string name;
+		int byteIndex;
+	};
 	
 	std::string readFile(std::string &fileName) {
 		std::ifstream file(fileName);
 		std::string content;
 
 		if (!file.is_open()) {
-			std::cout << "Could not open file '" << fileName << "'\n";
+			std::cout << termcolor::red << "[ERROR]" << termcolor::reset << " Could not open file '" << fileName << "', are you sure it exists?\n\n";
 			std::exit(-1);
 		}
 
@@ -134,6 +144,7 @@ namespace CCA {
 		std::vector<Token> tokens;
 		int lineFound = 1;
 		bool error = false;
+		bool foundDef = false;
 		int byteIndex = 0;
 
 		for (unsigned int readingIndex = 0; readingIndex < code.size(); readingIndex++) {
@@ -148,6 +159,7 @@ namespace CCA {
 			}
 			
 			else if (isMarker(currentCharacter)) {
+				++readingIndex;
 				std::string value = parseWord(code, readingIndex);
 
 				tokens.push_back(Token {
@@ -179,6 +191,18 @@ namespace CCA {
 					0,
 					byteIndex
 				});
+
+				++byteIndex;
+
+				if (foundDef) {
+					foundDef = false;
+					--byteIndex;
+				} else if (value == "def") {
+					foundDef = true;
+					--byteIndex;
+				} else if (value != "a" && value != "b" && value != "c" && value != "d"){
+					byteIndex += 3;
+				}
 			}
 			
 			else if (isNumber(currentCharacter)) {
@@ -191,6 +215,8 @@ namespace CCA {
 					value,
 					byteIndex
 				});
+
+				byteIndex += 4;
 			}
 			
 			else if (isAddress(currentCharacter)) {
@@ -204,6 +230,8 @@ namespace CCA {
 					value,
 					byteIndex
 				});
+
+				byteIndex += 4;
 			}
 			
 			else if (isString(currentCharacter)) {
@@ -223,19 +251,19 @@ namespace CCA {
 				++readingIndex;
 				++lineFound;
 
-				while (code[readingIndex] != '\n') {
+				while (readingIndex <= code.size() && code[readingIndex] != '\n') {
 					++readingIndex;
 				}
 			}
 			
 			else {
-				std::cout << "[ERROR] Unexpected symbol on line " << lineFound << ": '" << currentCharacter << "'\n";
+				std::cout << termcolor::red << "[ERROR]" << termcolor::reset << " Unexpected symbol on" << termcolor::red << " line " << lineFound << termcolor::reset;
 				error = true;
 			}
 		}
 
 		if (error) {
-			std::cout << "[ERROR] Aborting due to errors while parsing\n";
+			std::cout << termcolor::red << "[ERROR]" << termcolor::reset << " Aborting due to errors while parsing\n";
 			std::exit(-1);
 		}
 
@@ -302,7 +330,7 @@ namespace CCA {
 			
 			if (t.type == TokenType::IDENTIFIER && t.valString == "def") {
 				if (tokens[i + 1].type != TokenType::IDENTIFIER || tokens[i + 2].type != TokenType::STRING) {
-					std::cout << "[ERROR] error in definition statement on line " << t.lineFound << "\n";
+					std::cout << termcolor::red << "[ERROR]" << termcolor::reset << " Unknown syntax in definition statement on " << termcolor::red << " line " << t.lineFound << termcolor::reset;
 					std::exit(-1);
 				}
 				
@@ -314,9 +342,9 @@ namespace CCA {
 
 				i += 2;
 				continue;
+			} else {
+				tempTokens.push_back(t);
 			}
-
-			tempTokens.push_back(t);
 		}
 
 		tokens = tempTokens;
@@ -324,19 +352,70 @@ namespace CCA {
 		return definitions;
 	}
 
-	void postTokenizer(std::vector<Token> &tokens) {
+	void postTokenizer(std::vector<Token> &tokens, std::vector<Marker> &markers) {
+		std::vector<Token> partialCopy = {};
+		
 		for (unsigned int i = 0; i < tokens.size(); i++) {
 			Token &t = tokens[i];
 
-			std::vector<std::string> opcodes = { "mov", "stp", "syscall", "psh", "pop", "dup", "add", "sub", "mul", "div", "not", "and", "or", "xor", "jmp", "je", "jne", "jg", "js", "jo", "frs", "inc", "dec", "call", "ret" };
+			std::vector<std::string> opcodes = { "mov", "stp", "syscall", "push", "pop", "dup", "add", "sub", "mul", "div", "not", "and", "or", "xor", "jmp", "je", "jne", "jg", "js", "jo", "frs", "inc", "dec", "call", "ret", "cmp" };
 			std::vector<std::string> registers = { "a", "b", "c", "d" };
 
+			// indentify the opcodes
 			if (t.type == TokenType::IDENTIFIER && in_array(t.valString, opcodes))
 				t.type = TokenType::OPCODE;
 
+			// identify the registers
 			if (t.type == TokenType::IDENTIFIER && in_array(t.valString, registers))
 				t.type = TokenType::REGISTER;
+
+			// markers
+			if (t.type == TokenType::MARKER) {
+				markers.push_back(Marker {
+					t.valString,
+					t.byteIndex
+				});
+
+			} else {
+				partialCopy.push_back(t);
+			}
 		}
+		
+		bool errors = false;
+
+		tokens = partialCopy;
+
+		for (unsigned int i = 0; i < tokens.size(); i++) {
+			Token &t = tokens[i];
+			if (t.type == TokenType::IDENTIFIER) {
+				t.type = TokenType::NUMBER;
+
+				bool found;
+				
+				for (unsigned int j = 0; j < markers.size(); j++) {
+					Marker &m = markers[j];
+					if (m.name == t.valString) {
+						t.valNumeric = m.byteIndex;
+						found = true;
+						break;
+					}
+				}
+
+				if (!found) {
+					std::cout << termcolor::red << "[ERROR]" << termcolor::reset << " Could not match identifier '" << t.valString << "' on" << termcolor::red << " line " << t.lineFound << termcolor::reset << "\n\n";
+					errors = true;
+				}
+
+				tokens[i] = t;
+			}
+		}
+		
+		if (errors) {
+			std::cout << termcolor::red << "[ERROR]" << termcolor::reset << " Aborting due to errors while analyzing semantics\n\n";
+			std::exit(-1);
+		}
+
+		
 	}
 
 	void pushRegister(std::vector<unsigned char> &bytecode, const Token &t) {
@@ -366,13 +445,13 @@ namespace CCA {
 			const Token &opcode = tokens[i];
 
 			if (opcode.type != TokenType::OPCODE) {
-				std::cout << "[error] expected opcode on line " << opcode.lineFound << " got " << stringifyToken(opcode.type) << ": " << stringifyTokenValue(opcode) << "\n";
+				std::cout << termcolor::red << "[ERROR]" << termcolor::reset << " Expected opcode on line " << opcode.lineFound << " got " << stringifyToken(opcode.type) << ": " << stringifyTokenValue(opcode) << "\n";
 				std::exit(-1);
 			} else if (opcode.valString == "stp") {
 				bytecode.push_back(0x00);
 			} else if (opcode.valString == "syscall") {
 				bytecode.push_back(0xff);
-			} else if (opcode.valString == "psh") {
+			} else if (opcode.valString == "push") {
 				if (tokens[i + 1].type == TokenType::NUMBER) {
 					bytecode.push_back(0x01);
 					pushNumeric(bytecode, tokens[i + 1]);
@@ -383,11 +462,11 @@ namespace CCA {
 					bytecode.push_back(0x0c);
 					pushNumeric(bytecode, tokens[i + 1]);
 				} else {
-					std::cout << "[ERROR] Unknown structure for 'psh' mnemonic on line " << opcode.lineFound
+					std::cout << termcolor::red << "[ERROR]" << termcolor::reset << " Unknown structure for 'psh' mnemonic on line " << opcode.lineFound
 						<< ".\nExpected one of the following: \n"
-						<< "  - psh <number>\n"
-						<< "  - psh <register>\n"
-						<< "  - psh <address>\n"
+						<< "  - push <number>\n"
+						<< "  - push <register>\n"
+						<< "  - push <address>\n"
 						<< "\n";
 
 					error = true;
@@ -402,7 +481,7 @@ namespace CCA {
 					bytecode.push_back(0x04);
 					pushNumeric(bytecode, tokens[i + 1]);
 				} else {
-					std::cout << "[ERROR] Unknown structure for 'pop' mnemonic on line " << opcode.lineFound
+					std::cout << termcolor::red << "[ERROR]" << termcolor::reset << " Unknown structure for 'pop' mnemonic on line " << opcode.lineFound
 						<< ".\nExpected one of the following: \n"
 						<< "  - pop <register>\n"
 						<< "  - pop <address>\n"
@@ -440,7 +519,7 @@ namespace CCA {
 					pushNumeric(bytecode, tokens[i + 1]);
 					pushNumeric(bytecode, tokens[i + 3]);
 				} else {
-					std::cout << "[ERROR] Unknown structure for 'mov' mnemonic on line " << opcode.lineFound
+					std::cout << termcolor::red << "[ERROR]" << termcolor::reset << " Unknown structure for 'mov' mnemonic on" << termcolor::red << " line " << opcode.lineFound << termcolor::reset
 						<< ".\nExpected one of the following: \n"
 						<< "  - mov <register>, <number>\n"
 						<< "  - mov <address>, <number>\n"
@@ -531,7 +610,7 @@ namespace CCA {
 					pushNumeric(bytecode, tokens[i + 1]);
 					i += 1;
 				} else {
-					std::cout << "[ERROR] Unknown structure for 'jmp' mnemonic on line " << opcode.lineFound
+					std::cout << termcolor::red << "[ERROR]" << termcolor::reset <<  " Unknown structure for 'jmp' mnemonic on line " << opcode.lineFound
 						<< ".\nExpected one of the following: \n"
 						<< "  - jmp <number>\n"
 						<< "\n";
@@ -554,7 +633,7 @@ namespace CCA {
 					pushNumeric(bytecode, tokens[i + 1]);
 					i += 1;
 				} else {
-					std::cout << "[ERROR] Unknown structure for 'cmp' mnemonic on line " << opcode.lineFound
+					std::cout << termcolor::red << "[ERROR]" << termcolor::reset <<  " Unknown structure for 'cmp' mnemonic on line " << opcode.lineFound
 						<< ".\nExpected one of the following: \n"
 						<< "  - cmp <register>, <register>\n"
 						<< "  - cmp <register>, <number>\n"
@@ -569,7 +648,7 @@ namespace CCA {
 					pushNumeric(bytecode, tokens[i + 1]);
 					i += 1;
 				} else {
-					std::cout << "[ERROR] Unknown structure for 'je' mnemonic on line " << opcode.lineFound
+					std::cout << termcolor::red << "[ERROR]" << termcolor::reset <<  " Unknown structure for 'je' mnemonic on line " << opcode.lineFound
 						<< ".\nExpected one of the following: \n"
 						<< "  - je <number>\n"
 						<< "\n";
@@ -582,7 +661,7 @@ namespace CCA {
 					pushNumeric(bytecode, tokens[i + 1]);
 					i += 1;
 				} else {
-					std::cout << "[ERROR] Unknown structure for 'jne' mnemonic on line " << opcode.lineFound
+					std::cout << termcolor::red << "[ERROR]" << termcolor::reset <<  " Unknown structure for 'jne' mnemonic on line " << opcode.lineFound
 						<< ".\nExpected one of the following: \n"
 						<< "  - jne <number>\n"
 						<< "\n";
@@ -595,7 +674,7 @@ namespace CCA {
 					pushNumeric(bytecode, tokens[i + 1]);
 					i += 1;
 				} else {
-					std::cout << "[ERROR] Unknown structure for 'jg' mnemonic on line " << opcode.lineFound
+					std::cout << termcolor::red << "[ERROR]" << termcolor::reset <<  " Unknown structure for 'jg' mnemonic on line " << opcode.lineFound
 						<< ".\nExpected one of the following: \n"
 						<< "  - jg <number>\n"
 						<< "\n";
@@ -608,7 +687,7 @@ namespace CCA {
 					pushNumeric(bytecode, tokens[i + 1]);
 					i += 1;
 				} else {
-					std::cout << "[ERROR] Unknown structure for 'js' mnemonic on line " << opcode.lineFound
+					std::cout << termcolor::red << "[ERROR]" << termcolor::reset <<  " Unknown structure for 'js' mnemonic on line " << opcode.lineFound
 						<< ".\nExpected one of the following: \n"
 						<< "  - js <number>\n"
 						<< "\n";
@@ -621,7 +700,7 @@ namespace CCA {
 					pushNumeric(bytecode, tokens[i + 1]);
 					i += 1;
 				} else {
-					std::cout << "[ERROR] Unknown structure for 'jo' mnemonic on line " << opcode.lineFound
+					std::cout << termcolor::red << "[ERROR]" << termcolor::reset <<  " Unknown structure for 'jo' mnemonic on line " << opcode.lineFound
 						<< ".\nExpected one of the following: \n"
 						<< "  - jo <number>\n"
 						<< "\n";
@@ -651,7 +730,7 @@ namespace CCA {
 					bytecode.push_back(0x60);
 					i += 1;
 				} else {
-					std::cout << "[ERROR] Unknown structure for 'call' mnemonic on line " << opcode.lineFound
+					std::cout << termcolor::red << "[ERROR]" << termcolor::reset <<  " Unknown structure for 'call' mnemonic on line " << opcode.lineFound
 						<< ".\nExpected one of the following: \n"
 						<< "  - call <number>\n"
 						<< "\n";
@@ -664,7 +743,7 @@ namespace CCA {
 		}
 
 		if (error) {
-			std::cout << "[ERROR] Aborting due to errors while generating executable\n\n";
+			std::cout << termcolor::red << "[ERROR]" << termcolor::reset <<  " Aborting due to errors while generating executable\n\n";
 			std::exit(-1);
 		}
 
@@ -687,10 +766,14 @@ namespace CCA {
 		file.close();
 	}
 
-	void assemble(std::string fileName) {
+	void assemble(std::string fileName, cxxopts::ParseResult result) {
 		auto begin = std::chrono::high_resolution_clock::now();
 		
-		std::cout << "[INFO] Parsing " << fileName << "...\n\n";
+		uint8_t silent = result.count("silent");
+
+		if (!silent) {
+			std::cout << termcolor::green << "[INFO]" << termcolor::reset << " Parsing " << termcolor::green << fileName << termcolor::reset <<  "...\n\n";
+		}
 
 		// read inputs
 		std::string outputName = fileName.substr(0, fileName.find(".")) + ".ccb";
@@ -698,22 +781,32 @@ namespace CCA {
 		// tokenise
 		std::vector<Token> tokens = lexer(readFile(fileName));
 
-		// post tokenizer
-		postTokenizer(tokens);
+		std::vector<Marker> markers = {};
 
 		// filter out the definitions
 		std::vector<Definition> Definitions = parseDefinitions(tokens);
 		
-		std::cout << "[INFO] Generating " << outputName << "...\n\n";
+		// post tokenizer
+		postTokenizer(tokens, markers);
+		
+		if (!silent) {
+			std::cout << termcolor::green << "[INFO]" << termcolor::reset << " Generating " << termcolor::green << outputName << termcolor::reset << "...\n\n";
+		}
 
-		// print the tokens for debug
-		// printTokens(tokens);
-
+		if (result.count("debug")) {
+			// print the tokens for debug
+			std::cout << termcolor::yellow << "[DEBUG]" << termcolor::reset << " Lexical analyzer result: \n";
+			printTokens(tokens);
+			std::cout << "\n";
+		}
+		
 		generateBytecode(Definitions, tokens, outputName);
 
 		auto end = std::chrono::high_resolution_clock::now();
 
-		std::cout << "[INFO] Success assembling " << fileName << ", took " << std::chrono::duration<double, std::milli>(end - begin).count() << "ms\n\n";
+		if (!silent) {
+			std::cout  << termcolor::green << "[INFO]" << termcolor::reset << " Success assembling " << fileName << ", took " << termcolor::green << std::chrono::duration<double, std::milli>(end - begin).count() << termcolor::reset << "ms\n\n";
+		}
 
 		return;
 	}

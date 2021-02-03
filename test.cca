@@ -1,2 +1,8 @@
-mov 5, 5
+def test "Hello world"
+
+:main
+    mov a, 0
+    mov b, 0
+    mov c, 11
+    syscall
 stp
