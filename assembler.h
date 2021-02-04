@@ -7,6 +7,7 @@
 #include <vector>
 #include <algorithm>
 #include <chrono>
+#include <math.h>
 
 // other libraries
 #include "./lib/termcolor.hpp"
@@ -303,20 +304,46 @@ namespace CCA {
 	}
 
 	void printTokens(std::vector<Token> &tokens) {
+		int lineNumberMagnitude = std::floor(std::log10(tokens.back().lineFound));
+
 		for (auto &t: tokens) {
+			int currentMagnitude = lineNumberMagnitude - std::floor(std::log10(t.lineFound));
+			std::cout << "  " << t.lineFound;
+
+			for (int i = 0; i < currentMagnitude; i++) {
+				std::cout << " ";
+			}
+
 			if (t.type == TokenType::ADDRESS || t.type == TokenType::NUMBER) {
 				std::cout
-					<< "{\n\ttype: " << stringifyToken(t.type)
-					<< ",\n\tvalue: " << t.valNumeric
-					<< ",\n\tline: " << t.lineFound
-					<< "\n},\n";
+					<< termcolor::yellow << " | "
+					<< termcolor::reset << stringifyToken(t.type)
+					<< termcolor::yellow << ": " << termcolor::reset << t.valNumeric
+					<< "\n";
 			} else {
 				std::cout
-					<< "{\n\ttype: " << stringifyToken(t.type)
-					<< ",\n\tvalue: '" << t.valString
-					<< "',\n\tline: " << t.lineFound
-					<< "\n},\n";
+					<< termcolor::yellow << " | "
+					<< termcolor::reset << stringifyToken(t.type)
+					<< termcolor::yellow << ": " << termcolor::reset  << t.valString
+					<< "\n";
 			}
+		}
+	}
+
+	void printDefs(std::vector<Definition> &defs) {
+		for (auto &d: defs) {
+			std::cout << termcolor::blue << "  name: " << termcolor::reset << d.name << ", "
+			<< termcolor::blue << "addr: " << termcolor::reset << d.index << ", "
+			<< termcolor::blue << "str: '" << termcolor::reset << d.value << "'"
+			<< termcolor::yellow << "\n" << termcolor::reset;
+		}
+	}
+
+	void printMarkers(std::vector<Marker> &markers) {
+		for (auto &m: markers) {
+			std::cout << termcolor::blue << "  name: " << termcolor::reset << m.name << ", "
+			<< termcolor::blue << "addr: " << termcolor::reset << m.byteIndex
+			<< termcolor::yellow << "\n" << termcolor::reset;
 		}
 	}
 
@@ -339,6 +366,8 @@ namespace CCA {
 					tokens[i + 2].valString,
 					tokens[i + 1].valString
 				});
+
+				definitionMemoryIndex += tokens[i + 2].valString.size();
 
 				i += 2;
 				continue;
@@ -794,7 +823,7 @@ namespace CCA {
 		std::vector<Marker> markers = {};
 
 		// filter out the definitions
-		std::vector<Definition> Definitions = parseDefinitions(tokens);
+		std::vector<Definition> definitions = parseDefinitions(tokens);
 		
 		// post tokenizer
 		postTokenizer(tokens, markers);
@@ -808,14 +837,24 @@ namespace CCA {
 			std::cout << termcolor::yellow << "[DEBUG]" << termcolor::reset << " Lexical analyzer result: \n";
 			printTokens(tokens);
 			std::cout << "\n";
+
+			// print the definitions for debug
+			std::cout << termcolor::yellow << "[DEBUG]" << termcolor::reset << " Definitions found: \n";
+			printDefs(definitions);
+			std::cout << "\n";
+
+			// print the markers
+			std::cout << termcolor::yellow << "[DEBUG]" << termcolor::reset << " Markers found: \n";
+			printMarkers(markers);
+			std::cout << "\n";
 		}
 		
-		generateBytecode(Definitions, tokens, outputName);
+		generateBytecode(definitions, tokens, outputName);
 
 		auto end = std::chrono::high_resolution_clock::now();
 
 		if (!silent) {
-			std::cout  << termcolor::green << "[INFO]" << termcolor::reset << " Success assembling "  << termcolor::green << fileName << termcolor::reset << ", took " << termcolor::green << std::chrono::duration<double, std::milli>(end - begin).count() << termcolor::reset << "ms\n\n";
+			std::cout  << termcolor::green << "[INFO]" << termcolor::reset << " Successfully assembled "  << termcolor::green << fileName << termcolor::reset << ", took " << termcolor::green << std::chrono::duration<double, std::milli>(end - begin).count() << termcolor::reset << "ms\n\n";
 		}
 
 		return;
