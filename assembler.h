@@ -770,14 +770,24 @@ namespace CCA {
 		auto begin = std::chrono::high_resolution_clock::now();
 		
 		uint8_t silent = result.count("silent");
+		uint8_t customOutName = 0;
+
+		std::string outputName = "";
+
+		if (result.count("output")) {
+			customOutName = 1;
+			outputName = result["output"].as<std::string>();
+		}
 
 		if (!silent) {
 			std::cout << termcolor::green << "[INFO]" << termcolor::reset << " Parsing " << termcolor::green << fileName << termcolor::reset <<  "...\n\n";
 		}
 
 		// read inputs
-		std::string outputName = fileName.substr(0, fileName.find(".")) + ".ccb";
-
+		if (!customOutName) {
+			outputName = fileName.substr(0, fileName.find(".")) + ".ccb";
+		}
+		
 		// tokenise
 		std::vector<Token> tokens = lexer(readFile(fileName));
 
@@ -805,7 +815,7 @@ namespace CCA {
 		auto end = std::chrono::high_resolution_clock::now();
 
 		if (!silent) {
-			std::cout  << termcolor::green << "[INFO]" << termcolor::reset << " Success assembling " << fileName << ", took " << termcolor::green << std::chrono::duration<double, std::milli>(end - begin).count() << termcolor::reset << "ms\n\n";
+			std::cout  << termcolor::green << "[INFO]" << termcolor::reset << " Success assembling "  << termcolor::green << fileName << termcolor::reset << ", took " << termcolor::green << std::chrono::duration<double, std::milli>(end - begin).count() << termcolor::reset << "ms\n\n";
 		}
 
 		return;

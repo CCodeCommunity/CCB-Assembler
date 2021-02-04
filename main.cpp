@@ -15,6 +15,7 @@ int main(int argc, char* argv[]) {
 		("o,output", "Outputs the bytecode to the file named <arg>", cxxopts::value<std::string>());
 
 	cxxopts::ParseResult result;
+	
 	try {
 		result = options.parse(argc, argv);
 	} catch (const cxxopts::OptionParseException& e) {
@@ -25,7 +26,7 @@ int main(int argc, char* argv[]) {
 	cxxopts::PositionalList args = result.unmatched();
 
 	if (result.count("version")) {
-		std::cout << "CCVM V1.0.0\n";
+		std::cout << "CCAssembler V1.0.0\n";
 		std::exit(0);
 	}
 
