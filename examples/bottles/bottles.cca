@@ -1,0 +1,53 @@
+def first " bottles of beer on the wall, "
+def second " bottles of beer.\nTake one down, pass it around, "
+
+mov d, 99
+
+:nextIter
+    ; print the number
+    mov a, 3
+    mov b, d
+    syscall
+
+    ; print " bottles of beer on the wall"
+    mov a, 0
+    mov b, first
+    mov c, 30
+    syscall
+
+    ; print the number again
+    mov a, 3
+    mov b, d
+    syscall
+
+    ;print " bottles of beer.\nTake one down, pass it around, "
+    mov a, 0
+    mov b, second
+    mov c, 49
+    syscall
+
+    ; print the number again
+    dec d
+    mov a, 3
+    mov b, d
+    syscall
+
+    ; print " bottles of beer on the wall"
+    mov a, 0
+    mov b, first
+    mov c, 28
+    syscall
+
+    ; print ".\n\n"
+    mov b, second
+    mov c, 1
+    mov a, 16
+    add b, a
+    mov a, 0
+    syscall
+    inc b
+    syscall
+    syscall
+
+    cmp d, 0
+jne nextIter

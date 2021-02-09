@@ -1,0 +1,7 @@
+def hw "Hello world\n"
+
+mov a, 0
+mov b, hw
+mov c, 15
+syscall
+stp

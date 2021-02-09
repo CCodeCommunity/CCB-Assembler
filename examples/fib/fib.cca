@@ -1,0 +1,47 @@
+def enter "\n"
+
+jmp main
+
+:printEnter
+    mov a, 0
+    mov b, enter
+    mov c, 1
+    syscall
+ret
+
+:printNum
+    mov b, a
+    mov a, 3
+    syscall
+ret
+
+:main
+    mov a, 0
+    call printNum
+    call printEnter
+
+    mov a, 1
+    call printNum
+    call printEnter
+
+    mov d, 48 ; count down
+    mov a, 1
+    mov b, 1
+    mov c, 0
+
+    dec d
+    dec d
+
+    :loop
+        call printNum
+        call printEnter
+
+        ; calculate next itteration
+        mov c, b
+        mov b, a
+        add a, c
+
+        dec d
+        cmp d, 0
+    jne loop
+stp

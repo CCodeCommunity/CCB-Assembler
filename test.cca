@@ -1,9 +1,0 @@
-def test "Hello\nworld"
-def heyyy "blehhh"
-
-:main
-    mov a, 0
-    mov b, 8
-    mov c, 11
-    syscall
-stp

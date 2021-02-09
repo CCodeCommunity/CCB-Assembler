@@ -12,6 +12,7 @@ int main(int argc, char* argv[]) {
 		("s,silent", "Dont display any info except errors")
 		("h,help", "Display this information")
 		("v,version", "Display the assembler version")
+		("w,watch", "Watch for file changes")
 		("o,output", "Outputs the bytecode to the file named <arg>", cxxopts::value<std::string>());
 
 	cxxopts::ParseResult result;
@@ -37,7 +38,12 @@ int main(int argc, char* argv[]) {
 
 	if (args.size() > 0) {
 		std::string fileName = args[0];
-		CCA::assemble(fileName, result);
+
+		if (result.count("watch"))
+			CCA::watchAssembly(fileName, result);
+		else
+			CCA::assemble(fileName, result);
+
 		std::exit(0);
 	}
 }

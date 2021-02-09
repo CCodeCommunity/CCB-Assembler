@@ -12,11 +12,23 @@
 // other libraries
 #include "./lib/termcolor.hpp"
 #include "./lib/cxxopt.hpp"
+#include "./lib/FileWatcher/FileWatcher/FileWatcher.h"
 
 // how to compile:
 // g++ main.cpp -o cca -std=c++11 && ./cca test.cca
 
 namespace CCA {
+	std::string replace(std::string str, const std::string& sub1, const std::string& sub2) {
+		if (sub1.empty())
+			return str;
+
+		std::size_t pos;
+		while ((pos = str.find(sub1)) != std::string::npos)
+			str.replace(pos, sub1.size(), sub2);
+
+		return str;
+	}
+
 	bool in_array(const std::string &value, const std::vector<std::string> &array) {
 		return std::find(array.begin(), array.end(), value) != array.end();
 	}
@@ -72,6 +84,16 @@ namespace CCA {
 		return content;
 	}
 
+	bool isRegisterOrInstruction(std::string code) {
+		std::vector<std::string> opcodes = { "mov", "stp", "syscall", "push", "pop", "dup", "add", "sub", "mul", "div", "not", "and", "or", "xor", "jmp", "je", "jne", "jg", "js", "jo", "frs", "inc", "dec", "call", "ret", "cmp" };
+		std::vector<std::string> registers = { "a", "b", "c", "d" };
+
+		// indentify the opcodes
+		if (in_array(code, opcodes) || in_array(code, registers))
+			return true;
+		return false;
+	}
+
 	bool isIgnorable(char c) {
 		return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 	}
@@ -106,11 +128,9 @@ namespace CCA {
 
 	std::string parseWord(std::string &code, unsigned int &readingIndex) {
 		std::string result = "";
-		result += code[readingIndex++];
 
-		while(isIdentifier(code[readingIndex])) {
+		while(isIdentifier(code[readingIndex]))
 			result += code[readingIndex++];
-		}
 
 		--readingIndex;
 
@@ -119,24 +139,45 @@ namespace CCA {
 
 	std::string parseString(std::string &code, unsigned int &readingIndex) {
 		std::string result = "";
-		result += code[readingIndex++];
 
-		while(!isString(code[readingIndex])) {
+		while(!isString(code[readingIndex]))
 			result += code[readingIndex++];
-		}
 
 		return result;
 	}
 
 	int parseNumber(std::string &code, unsigned int &readingIndex) {
 		std::string result = "";
-		result += code[readingIndex++];
 
+		int index = 0;
+		int base = 10;
+		
 		while(isNumber(code[readingIndex])) {
+			if (index == 0 && code[readingIndex] == '0' && code[readingIndex + 1] == 'x') {
+				base = 16;
+				readingIndex += 2;
+			} else if (index == 0 && code[readingIndex] == '0' && code[readingIndex + 1] == 'b') {
+				base = 2;
+				readingIndex += 2;
+			} else if (index == 0 && code[readingIndex] == '0' && code[readingIndex + 1] == 'o') {
+				base = 8;
+				readingIndex += 2;
+			}
+			
 			result += code[readingIndex++];
+			++index;
 		}
 
 		--readingIndex;
+
+		// handle non base10 bases
+		if (base == 2) {
+			return std::stoi(result, 0, 2);
+		} else if (base == 8) {
+			return std::stoi(result, 0, 8);
+		} else if (base == 16) {
+			return std::stoi(result, 0, 16);
+		}
 
 		return std::stoi(result);
 	}
@@ -201,7 +242,7 @@ namespace CCA {
 				} else if (value == "def") {
 					foundDef = true;
 					--byteIndex;
-				} else if (value != "a" && value != "b" && value != "c" && value != "d"){
+				} else if (!isRegisterOrInstruction(value)){
 					byteIndex += 3;
 				}
 			}
@@ -299,16 +340,24 @@ namespace CCA {
 	std::string stringifyTokenValue(Token t) {
 		if (t.type == TokenType::ADDRESS || t.type == TokenType::NUMBER)
 			return std::to_string(t.valNumeric);
-		else 
+		else
 			return t.valString;
 	}
 
 	void printTokens(std::vector<Token> &tokens) {
 		int lineNumberMagnitude = std::floor(std::log10(tokens.back().lineFound));
+		int currentLineNumber = 0;
 
 		for (auto &t: tokens) {
 			int currentMagnitude = lineNumberMagnitude - std::floor(std::log10(t.lineFound));
-			std::cout << "  " << t.lineFound;
+			int tokenTypePadding = 8 - stringifyToken(t.type).size();
+
+			if (t.lineFound != currentLineNumber) {
+				std::cout << "  " << t.lineFound;
+				currentLineNumber = t.lineFound;
+			} else {
+				std::cout << "  .";
+			}
 
 			for (int i = 0; i < currentMagnitude; i++) {
 				std::cout << " ";
@@ -316,33 +365,93 @@ namespace CCA {
 
 			if (t.type == TokenType::ADDRESS || t.type == TokenType::NUMBER) {
 				std::cout
-					<< termcolor::yellow << " | "
+					<< termcolor::blue << " | "
 					<< termcolor::reset << stringifyToken(t.type)
-					<< termcolor::yellow << ": " << termcolor::reset << t.valNumeric
-					<< "\n";
+					<< termcolor::blue << ": " << termcolor::reset;
+					
+					for (int i = 0; i < tokenTypePadding; i++)
+						std::cout << " ";
+
+					std::cout << t.valNumeric << "\n";
 			} else {
 				std::cout
-					<< termcolor::yellow << " | "
-					<< termcolor::reset << stringifyToken(t.type)
-					<< termcolor::yellow << ": " << termcolor::reset  << t.valString
-					<< "\n";
+					<< termcolor::blue << " | "
+					<< termcolor::reset << stringifyToken(t.type) << termcolor::blue << ": " << termcolor::reset;
+
+					for (int i = 0; i < tokenTypePadding; i++)
+						std::cout << " ";
+
+					std::cout << t.valString << "\n";
 			}
 		}
 	}
 
 	void printDefs(std::vector<Definition> &defs) {
+		int longestDefName = 0;
+		int longestDefAddr = 0;
+
+		// find the longest def name length
 		for (auto &d: defs) {
-			std::cout << termcolor::blue << "  name: " << termcolor::reset << d.name << ", "
-			<< termcolor::blue << "addr: " << termcolor::reset << d.index << ", "
-			<< termcolor::blue << "str: '" << termcolor::reset << d.value << "'"
-			<< termcolor::yellow << "\n" << termcolor::reset;
+			int defNameLength = d.name.size();
+			int defAddrLength;
+
+			if (d.index == 0) {
+				defAddrLength = 1;
+			} else {
+				defAddrLength = longestDefAddr - std::floor(std::log10(d.index));
+			}
+
+			if (defNameLength > longestDefName)
+				longestDefName = defNameLength;
+
+			if (defAddrLength > longestDefAddr)
+				longestDefAddr = defAddrLength;
+		}
+
+		for (auto &d: defs) {
+			int namePaddingAmount = longestDefName - d.name.size();
+			int addrPaddingAmount = 0;
+
+			if (d.index == 0) {
+				addrPaddingAmount = 1;
+			} else {
+				addrPaddingAmount = longestDefAddr - std::floor(std::log10(d.index));
+			}
+
+			std::cout << termcolor::blue << "  name: " << termcolor::reset << d.name << ", ";
+
+			for (int i = 0; i < namePaddingAmount; i++)
+				std::cout << " ";
+
+			std::cout << termcolor::blue << "addr: " << termcolor::reset << d.index << ", ";
+
+			for (int i = 0; i < addrPaddingAmount; i++)
+				std::cout << " ";
+
+			std::cout << termcolor::blue << "str: " << termcolor::reset << "'" << d.value << "'"
+			<< termcolor::blue << "\n" << termcolor::reset;
 		}
 	}
 
 	void printMarkers(std::vector<Marker> &markers) {
+		int longestMarkerName = 0;
+
 		for (auto &m: markers) {
-			std::cout << termcolor::blue << "  name: " << termcolor::reset << m.name << ", "
-			<< termcolor::blue << "addr: " << termcolor::reset << m.byteIndex
+			int currentMarkerLength = m.name.size();
+
+			if (currentMarkerLength > longestMarkerName) {
+				longestMarkerName = currentMarkerLength;
+			}
+		}
+
+		for (auto &m: markers) {
+			int markerNamePadding = longestMarkerName - m.name.size();
+			std::cout << termcolor::blue << "  name: " << termcolor::reset << m.name << ", ";
+
+			for (int i = 0; i < markerNamePadding; i++)
+				std::cout << " ";
+
+			std::cout << termcolor::blue << "addr: " << termcolor::reset << m.byteIndex
 			<< termcolor::yellow << "\n" << termcolor::reset;
 		}
 	}
@@ -381,7 +490,7 @@ namespace CCA {
 		return definitions;
 	}
 
-	void postTokenizer(std::vector<Token> &tokens, std::vector<Marker> &markers) {
+	void postTokenizer(std::vector<Token> &tokens, std::vector<Marker> &markers, std::vector<Definition> &definitions) {
 		std::vector<Token> partialCopy = {};
 		
 		for (unsigned int i = 0; i < tokens.size(); i++) {
@@ -419,14 +528,27 @@ namespace CCA {
 			if (t.type == TokenType::IDENTIFIER) {
 				t.type = TokenType::NUMBER;
 
-				bool found;
+				bool found = false;
 				
 				for (unsigned int j = 0; j < markers.size(); j++) {
 					Marker &m = markers[j];
+
 					if (m.name == t.valString) {
 						t.valNumeric = m.byteIndex;
 						found = true;
 						break;
+					}
+				}
+
+				if (!found) { // HERE
+					for (unsigned int j = 0; j < definitions.size(); j++) {
+						Definition &d = definitions[j];
+
+						if (d.name == t.valString) {
+							t.valNumeric = d.index;
+							found = true;
+							break;
+						}
 					}
 				}
 
@@ -757,6 +879,7 @@ namespace CCA {
 			} else if (opcode.valString == "call") {
 				if (tokens[i + 1].type == TokenType::NUMBER) {
 					bytecode.push_back(0x60);
+					pushNumeric(bytecode, tokens[i + 1]);
 					i += 1;
 				} else {
 					std::cout << termcolor::red << "[ERROR]" << termcolor::reset <<  " Unknown structure for 'call' mnemonic on line " << opcode.lineFound
@@ -783,8 +906,25 @@ namespace CCA {
 		file.open(fileName, std::ios::binary);
 
 		for (int i = 0; i < definitions.size(); i++) {
-			const auto& s = definitions[i].value;
-			file.write(s.c_str(), s.size());
+			std::string s = definitions[i].value;
+
+			s = replace(s, "\\n", "\n");
+			s = replace(s, "\\t", "\t");
+			s = replace(s, "\\\\", "\\");
+			s = replace(s, "\\'", "'");
+			s = replace(s, "\\\"", "\"");
+			s = replace(s, "\\a", "\a");
+			s = replace(s, "\\b", "\b");
+			s = replace(s, "\\e", "\e");
+			s = replace(s, "\\f", "\f");
+			s = replace(s, "\\r", "\r");
+			s = replace(s, "\\v", "\v");
+
+			
+
+			if (s != "") {
+				file.write(s.c_str(), s.size());
+			}
 		}
 
 		file.write(SSS, 4);
@@ -826,7 +966,7 @@ namespace CCA {
 		std::vector<Definition> definitions = parseDefinitions(tokens);
 		
 		// post tokenizer
-		postTokenizer(tokens, markers);
+		postTokenizer(tokens, markers, definitions);
 		
 		if (!silent) {
 			std::cout << termcolor::green << "[INFO]" << termcolor::reset << " Generating " << termcolor::green << outputName << termcolor::reset << "...\n\n";
@@ -834,17 +974,17 @@ namespace CCA {
 
 		if (result.count("debug")) {
 			// print the tokens for debug
-			std::cout << termcolor::yellow << "[DEBUG]" << termcolor::reset << " Lexical analyzer result: \n";
+			std::cout << termcolor::blue << "[DEBUG]" << termcolor::reset << " Lexical analyzer result: \n";
 			printTokens(tokens);
 			std::cout << "\n";
 
 			// print the definitions for debug
-			std::cout << termcolor::yellow << "[DEBUG]" << termcolor::reset << " Definitions found: \n";
+			std::cout << termcolor::blue << "[DEBUG]" << termcolor::reset << " Definitions found: \n";
 			printDefs(definitions);
 			std::cout << "\n";
 
 			// print the markers
-			std::cout << termcolor::yellow << "[DEBUG]" << termcolor::reset << " Markers found: \n";
+			std::cout << termcolor::blue << "[DEBUG]" << termcolor::reset << " Markers found: \n";
 			printMarkers(markers);
 			std::cout << "\n";
 		}
@@ -859,4 +999,39 @@ namespace CCA {
 
 		return;
 	}
+
+	class AssemblerListener : public FW::FileWatchListener {
+	private:
+		std::string fileName;
+
+		cxxopts::ParseResult result;
+	
+	public:
+		AssemblerListener(std::string _fileName, cxxopts::ParseResult _result) {
+			fileName = _fileName;
+			result = _result;
+		}
+		
+   		void handleFileAction(FW::WatchID watchid, const FW::String& dir, const FW::String& filename,
+               FW::Action action) {
+			switch (action) {
+				case FW::Actions::Modified:
+					assemble(fileName, result);
+			}
+		}
+	};
+
+	void watchAssembly(std::string fileName, cxxopts::ParseResult result) {
+		AssemblerListener listener(fileName, result);
+
+		FW::FileWatcher fileWatcher;
+
+		FW::WatchID watchid = fileWatcher.addWatch(fileName, &listener);
+
+		assemble(fileName, result);
+
+		while (true) {
+			fileWatcher.update();
+		}
+	}	
 } 
