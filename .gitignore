@@ -1,0 +1,5 @@
+*.sh
+cca
+test.cca
+test.ccb
+.vscode

@@ -685,7 +685,16 @@ namespace CCA {
 
 				i += 3;
 			} else if (opcode.valString == "add") {
-				if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
+				if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::NUMBER) {
+					bytecode.push_back(0x70);
+					pushRegister(bytecode, tokens[i + 1]);
+					pushNumeric(bytecode, tokens[i + 3]);
+					i += 3;
+				} else if (tokens[i + 1].type == TokenType::NUMBER) {
+					bytecode.push_back(0x71);
+					pushNumeric(bytecode, tokens[i + 3]);
+					i += 1;
+				} else if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
 					bytecode.push_back(0x10);
 					pushRegister(bytecode, tokens[i + 1]);
 					pushRegister(bytecode, tokens[i + 3]);
@@ -694,7 +703,16 @@ namespace CCA {
 					bytecode.push_back(0x11);
 				}
 			} else if (opcode.valString == "sub") {
-				if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
+				if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::NUMBER) {
+					bytecode.push_back(0x72);
+					pushRegister(bytecode, tokens[i + 1]);
+					pushNumeric(bytecode, tokens[i + 3]);
+					i += 3;
+				} else if (tokens[i + 1].type == TokenType::NUMBER) {
+					bytecode.push_back(0x73);
+					pushNumeric(bytecode, tokens[i + 3]);
+					i += 1;
+				} else if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
 					bytecode.push_back(0x12);
 					pushRegister(bytecode, tokens[i + 1]);
 					pushRegister(bytecode, tokens[i + 3]);
@@ -703,7 +721,16 @@ namespace CCA {
 					bytecode.push_back(0x13);
 				}
 			} else if (opcode.valString == "mul") {
-				if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
+				if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::NUMBER) {
+					bytecode.push_back(0x74);
+					pushRegister(bytecode, tokens[i + 1]);
+					pushNumeric(bytecode, tokens[i + 3]);
+					i += 3;
+				} else if (tokens[i + 1].type == TokenType::NUMBER) {
+					bytecode.push_back(0x75);
+					pushNumeric(bytecode, tokens[i + 3]);
+					i += 1;
+				} if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
 					bytecode.push_back(0x14);
 					pushRegister(bytecode, tokens[i + 1]);
 					pushRegister(bytecode, tokens[i + 3]);
@@ -712,7 +739,16 @@ namespace CCA {
 					bytecode.push_back(0x15);
 				}
 			} else if (opcode.valString == "div") {
-				if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
+				if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::NUMBER) {
+					bytecode.push_back(0x76);
+					pushRegister(bytecode, tokens[i + 1]);
+					pushNumeric(bytecode, tokens[i + 3]);
+					i += 3;
+				} else if (tokens[i + 1].type == TokenType::NUMBER) {
+					bytecode.push_back(0x77);
+					pushNumeric(bytecode, tokens[i + 3]);
+					i += 1;
+				} if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
 					bytecode.push_back(0x16);
 					pushRegister(bytecode, tokens[i + 1]);
 					pushRegister(bytecode, tokens[i + 3]);
@@ -729,7 +765,16 @@ namespace CCA {
 					bytecode.push_back(0x19);
 				}
 			} else if (opcode.valString == "and") {
-				if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
+				if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::NUMBER) {
+					bytecode.push_back(0x78);
+					pushRegister(bytecode, tokens[i + 1]);
+					pushNumeric(bytecode, tokens[i + 3]);
+					i += 3;
+				} else if (tokens[i + 1].type == TokenType::NUMBER) {
+					bytecode.push_back(0x79);
+					pushNumeric(bytecode, tokens[i + 3]);
+					i += 1;
+				} if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
 					bytecode.push_back(0x1a);
 					pushRegister(bytecode, tokens[i + 1]);
 					pushRegister(bytecode, tokens[i + 3]);
@@ -738,7 +783,16 @@ namespace CCA {
 					bytecode.push_back(0x1b);
 				}
 			} else if (opcode.valString == "or") {
-				if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
+				if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::NUMBER) {
+					bytecode.push_back(0x7a);
+					pushRegister(bytecode, tokens[i + 1]);
+					pushNumeric(bytecode, tokens[i + 3]);
+					i += 3;
+				} else if (tokens[i + 1].type == TokenType::NUMBER) {
+					bytecode.push_back(0x7b);
+					pushNumeric(bytecode, tokens[i + 3]);
+					i += 1;
+				} if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
 					bytecode.push_back(0x1c);
 					pushRegister(bytecode, tokens[i + 1]);
 					pushRegister(bytecode, tokens[i + 3]);
@@ -747,7 +801,16 @@ namespace CCA {
 					bytecode.push_back(0x1d);
 				}
 			} else if (opcode.valString == "xor") {
-				if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
+				if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::NUMBER) {
+					bytecode.push_back(0x7c);
+					pushRegister(bytecode, tokens[i + 1]);
+					pushNumeric(bytecode, tokens[i + 3]);
+					i += 3;
+				} else if (tokens[i + 1].type == TokenType::NUMBER) {
+					bytecode.push_back(0x7d);
+					pushNumeric(bytecode, tokens[i + 3]);
+					i += 1;
+				} if (tokens[i + 1].type == TokenType::REGISTER && tokens[i + 2].type == TokenType::DIVIDER && tokens[i + 3].type == TokenType::REGISTER) {
 					bytecode.push_back(0x1e);
 					pushRegister(bytecode, tokens[i + 1]);
 					pushRegister(bytecode, tokens[i + 3]);
@@ -755,6 +818,18 @@ namespace CCA {
 				} else {
 					bytecode.push_back(0x1f);
 				}
+			} else if (opcode.valString == "rand") {
+				if (tokens[i + 1].type == TokenType::REGISTER) {
+					bytecode.push_back(0x7e);
+					pushRegister(bytecode, tokens[i + 1]);
+					i += 1;
+				} else {
+					bytecode.push_back(0x7f);
+				}
+			} else if (opcode.valString == "pow") {
+				// todo
+			} else if (opcode.valString == "sqrt") {
+				// todo
 			} else if (opcode.valString == "jmp") {
 				if (tokens[i + 1].type == TokenType::NUMBER) {
 					bytecode.push_back(0x20);
