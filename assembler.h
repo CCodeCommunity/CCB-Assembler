@@ -660,11 +660,6 @@ namespace CCA {
 			{ 0x77, { } }
 		}},
 
-		{ "not", {
-			{ 0x76, { TokenType::REGISTER } },
-			{ 0x77, { } }
-		}},
-
 		{ "and", {
 			{ 0x78, { TokenType::REGISTER, TokenType::DIVIDER, TokenType::NUMBER } },
 			{ 0x79, { TokenType::NUMBER } },
@@ -687,55 +682,82 @@ namespace CCA {
 		}},
 
 		{ "jmp", {
-			{ 0x20, { TokenType::NUMBER } },
+			{ 0x20, { TokenType::NUMBER } }
 		}},
 
 		{ "cmp", {
 			{ 0x31, { TokenType::REGISTER, TokenType::DIVIDER, TokenType::NUMBER } },
 			{ 0x32, { TokenType::NUMBER } },
-			{ 0x30, { TokenType::REGISTER, TokenType::DIVIDER, TokenType::REGISTER } },
+			{ 0x30, { TokenType::REGISTER, TokenType::DIVIDER, TokenType::REGISTER } }
 		}},
 
 		{ "je", {
-			{ 0x33, { TokenType::NUMBER } },
+			{ 0x33, { TokenType::NUMBER } }
 		}},
 
 		{ "jne", {
-			{ 0x34, { TokenType::NUMBER } },
+			{ 0x34, { TokenType::NUMBER } }
 		}},
 
 		{ "jg", {
-			{ 0x35, { TokenType::NUMBER } },
+			{ 0x35, { TokenType::NUMBER } }
 		}},
 
 		{ "js", {
-			{ 0x36, { TokenType::NUMBER } },
+			{ 0x36, { TokenType::NUMBER } }
 		}},
 
 		{ "jo", {
-			{ 0x37, { TokenType::NUMBER } },
+			{ 0x37, { TokenType::NUMBER } }
 		}},
 
 		{ "frs", {
-			{ 0x40, { } },
+			{ 0x40, { } }
 		}},
 
 		{ "inc", {
 			{ 0x50, { TokenType::REGISTER } },
-			{ 0x52, { } },
+			{ 0x52, { } }
 		}},
 
 		{ "dec", {
 			{ 0x51, { TokenType::REGISTER } },
-			{ 0x53, { } },
+			{ 0x53, { } }
 		}},
 
 		{ "ret", {
-			{ 0x61, { } },
+			{ 0x61, { } }
 		}},
 
 		{ "call", {
 			{ 0x60, { TokenType::NUMBER } },
+		}},
+
+		{ "rand", {
+			{ 0x7e, { TokenType::REGISTER } },
+			{ 0x7f, { } }
+		}},
+
+		{ "pow", {
+			{ 0x80, { TokenType::REGISTER } },
+			{ 0x81, { } },
+			{ 0x82, { TokenType::REGISTER, TokenType::DIVIDER, TokenType::NUMBER } },
+			{ 0x83, { TokenType::NUMBER } }
+		}},
+
+		{ "sqrt", {
+			{ 0x84, { TokenType::REGISTER } },
+			{ 0x85, { } },
+		}},
+
+		{ "root", {
+			{ 0x8a, { TokenType::REGISTER, TokenType::DIVIDER, TokenType::NUMBER } },
+			{ 0x8b, { TokenType::NUMBER } }
+		}},
+
+		{ "mod", {
+			{ 0x8e, { TokenType::REGISTER, TokenType::DIVIDER, TokenType::NUMBER } },
+			{ 0x8f, { TokenType::NUMBER } }
 		}},
 	};
 
@@ -756,16 +778,10 @@ namespace CCA {
 			// find the instructions that this opcode could be part of
 			std::vector<Instruction> possibleInstructions = instructionSet[opcode.valString];
 
-			// gather the arguments given to this opcode
+			// gather the arguments given to this opcode, also keep in mind there could be no more arguments
 			std::vector<Token> arguments = {};
-			while (tokens[i + 1].type != TokenType::OPCODE) {
-				// add it to the array
+			while (tokens[i + 1].type != TokenType::OPCODE && i != tokens.size() - 1)
 				arguments.push_back(tokens[++i]);
-
-				// end of token list
-				if (i == tokens.size() - 1)
-					break;
-			}
 
 			Instruction matchingInstruction;
 			
