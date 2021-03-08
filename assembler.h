@@ -92,7 +92,7 @@ namespace CCA {
 	}
 
 	bool isRegisterOrInstruction(std::string code) {
-		std::vector<std::string> opcodes = { "mov", "stp", "syscall", "push", "pop", "dup", "add", "sub", "mul", "div", "not", "and", "or", "xor", "jmp", "je", "jne", "jg", "js", "jo", "frs", "inc", "dec", "call", "ret", "cmp" };
+		std::vector<std::string> opcodes = { "rand", "pow", "mod", "mov", "stp", "syscall", "push", "pop", "dup", "add", "sub", "mul", "div", "not", "and", "or", "xor", "jmp", "je", "jne", "jg", "js", "jo", "frs", "inc", "dec", "call", "ret", "cmp" };
 		std::vector<std::string> registers = { "a", "b", "c", "d" };
 
 		// indentify the opcodes
@@ -503,7 +503,7 @@ namespace CCA {
 		for (unsigned int i = 0; i < tokens.size(); i++) {
 			Token &t = tokens[i];
 
-			std::vector<std::string> opcodes = { "mov", "stp", "syscall", "push", "pop", "dup", "add", "sub", "mul", "div", "not", "and", "or", "xor", "jmp", "je", "jne", "jg", "js", "jo", "frs", "inc", "dec", "call", "ret", "cmp" };
+			std::vector<std::string> opcodes = { "rand", "pow", "mod", "mov", "stp", "syscall", "push", "pop", "dup", "add", "sub", "mul", "div", "not", "and", "or", "xor", "jmp", "je", "jne", "jg", "js", "jo", "frs", "inc", "dec", "call", "ret", "cmp" };
 			std::vector<std::string> registers = { "a", "b", "c", "d" };
 
 			// indentify the opcodes
