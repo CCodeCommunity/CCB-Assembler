@@ -1,9 +1,9 @@
 #include <iostream>
 
-#include "ccb/assembler.h"
+#include <cca/assembler.h>
 
-#include "cxxopt/cxxopt.hpp"
-#include "termcolor/termcolor.hpp"
+#include <cxxopt/cxxopt.hpp>
+#include <termcolor/termcolor.hpp>
 
 int main(int argc, char* argv[]) {
 	cxxopts::Options options("cca", "The official CC Assembler\n");
