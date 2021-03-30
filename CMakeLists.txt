@@ -1,23 +1,9 @@
-cmake_minimum_required(VERSION 3.17)
-project(CCB_Assembler)
-
-set(CMAKE_CXX_STANDARD 14)
-
-include_directories(.)
-include_directories(lib)
-include_directories(lib/FileWatcher)
-
-add_executable(CCB_Assembler
-        lib/FileWatcher/FileWatcher/FileWatcher.h
-        lib/FileWatcher/FileWatcher/FileWatcherImpl.h
-        lib/FileWatcher/FileWatcher/FileWatcherLinux.h
-        lib/FileWatcher/FileWatcher/FileWatcherOSX.h
-        lib/FileWatcher/FileWatcher/FileWatcherWin32.h
-        lib/FileWatcher/FileWatcher.cpp
-        lib/FileWatcher/FileWatcherLinux.cpp
-        lib/FileWatcher/FileWatcherOSX.cpp
-        lib/FileWatcher/FileWatcherWin32.cpp
-        lib/cxxopt.hpp
-        lib/termcolor.hpp
-        assembler.h
-        main.cpp)
+cmake_minimum_required(VERSION 3.13)
+project(ccb-assembler CXX)
+add_subdirectory(thirdparty)
+add_executable(ccb-assembler)
+file(GLOB_RECURSE CCB_ASSEMBLER_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/sources/*.cpp")
+target_sources(ccb-assembler PRIVATE ${CCB_ASSEMBLER_SOURCES})
+target_link_libraries(ccb-assembler PRIVATE cxxopt termcolor FileWatcher)
+target_include_directories(ccb-assembler PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include/")
+set_target_properties(ccb-assembler PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED ON)
