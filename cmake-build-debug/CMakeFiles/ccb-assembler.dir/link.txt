@@ -1,0 +1,1 @@
+/usr/bin/c++  -g   CMakeFiles/ccb-assembler.dir/sources/main.cpp.o  -o ccb-assembler  thirdparty/FileWatcher/libFileWatcher.a 

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="termcolor"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;CMake Files\thirdparty\;CMake Files\thirdparty\FileWatcher\;CMake Files\thirdparty\cxxopt\;CMake Files\thirdparty\termcolor\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/home/luc/Projects/ccsdk/CCB-Assembler/cmake-build-debug/thirdparty/termcolor"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/home/luc/Projects/ccsdk/CCB-Assembler/cmake-build-debug/thirdparty/termcolor/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/luc/Projects/ccsdk/CCB-Assembler/cmake-build-debug/thirdparty/termcolor/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/home/luc/Projects/ccsdk/CCB-Assembler/cmake-build-debug/thirdparty/termcolor/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/home/luc/Projects/ccsdk/CCB-Assembler/cmake-build-debug/thirdparty/termcolor/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/home/luc/Projects/ccsdk/CCB-Assembler/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+		<Unit filename="/home/luc/Projects/ccsdk/CCB-Assembler/thirdparty/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\thirdparty\"/>
+		</Unit>
+		<Unit filename="/home/luc/Projects/ccsdk/CCB-Assembler/thirdparty/FileWatcher/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\thirdparty\FileWatcher\"/>
+		</Unit>
+		<Unit filename="/home/luc/Projects/ccsdk/CCB-Assembler/thirdparty/cxxopt/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\thirdparty\cxxopt\"/>
+		</Unit>
+		<Unit filename="/home/luc/Projects/ccsdk/CCB-Assembler/thirdparty/termcolor/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\thirdparty\termcolor\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>

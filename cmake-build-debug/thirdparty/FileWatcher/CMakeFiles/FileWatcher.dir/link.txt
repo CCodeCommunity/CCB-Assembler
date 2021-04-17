@@ -1,0 +1,2 @@
+/usr/bin/ar qc libFileWatcher.a  CMakeFiles/FileWatcher.dir/sources/FileWatcher.cpp.o CMakeFiles/FileWatcher.dir/sources/FileWatcherLinux.cpp.o
+/usr/bin/ranlib libFileWatcher.a
