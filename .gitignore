@@ -1,7 +1,0 @@
-*.sh
-cca
-test.cca
-test.ccb
-.vscode
-/cmake-build-debug
-/.idea
